@@ -1,0 +1,140 @@
+#include "main.h"
+
+/**
+ * get_ssize - function to get size of string
+ * @s: char pointer
+ * Return: ssize_t
+*/
+size_t get_ssize(char *s)
+{
+	size_t i;
+	for (i = 0; s[i] != '\0'; i++)
+		;
+	return (i);
+}
+
+/**
+ * _perror - print error
+ * @msg: char pointer
+ * Return: void
+*/
+void _perror(char *msg)
+{
+	perror(msg);
+	exit(EXIT_FAILURE);
+}
+
+/**
+ * create_tokens - function to create tokens from line buffer
+ * @buf: const char pointer
+ * @i: ssize_t
+ * @pt: struct ptoken_t pointer
+ * Return: int
+*/
+int create_tokens(char *buf, token_t *pt)
+{
+	if (!buf) /* check if buffer is empty */
+		return (-1);
+
+	pt->elements = 0;
+
+	if (nullterminate(buf, get_ssize(buf), pt) == -1)
+	{
+		free(buf);
+		_perror("Error: failed to null terminate line buffer");
+	}
+
+	return (0);
+}
+
+
+/**
+ * nullterminate - replaces all spaces with delimiter
+ * @buffer: char pointer
+ * @token: struct token_t
+ * Return: int
+*/
+int nullterminate(char *buffer, size_t n, token_t *token)
+{
+    size_t i, counter = 0;
+    char *word;
+
+    word = malloc(sizeof(char) * n);
+    token->word_size = (size_t *)malloc(sizeof(size_t) * n);
+    token->words = (char **)malloc(sizeof(char *) * n);
+
+    if (!word || !token->word_size || !token->words)
+        _perror("Error: failed to allocate memory");
+
+    for (i = 0; i < n; i++)
+    {
+        if (buffer[i] != token->delim &&
+            buffer[i] != '\n')
+        {
+            word[counter] = buffer[i];
+            counter++;
+        }
+        else
+        {
+            if (!counter)
+                continue;
+
+            word[counter] = '\0';
+            token->words[token->elements] = word;
+            token->word_size[token->elements] = counter;
+
+            dprintf(STDOUT_FILENO, "Elements: %ld\n", token->elements);
+            dprintf(STDOUT_FILENO, "Word size: %ld\n", token->word_size[token->elements]);
+            dprintf(STDOUT_FILENO, "word: %s\n", token->words[token->elements]);
+
+            token->elements++;
+            counter = 0; /* reset counter */
+        }
+    }
+
+    free(word);
+    _realloc(token);
+    return ((!token->words) ? -1 : 0);
+}
+
+/**
+ * _realloc - function to realloc token pointer
+ *
+ * @token: struct token_t
+ * Return: void
+ */
+void _realloc(token_t *token)
+{
+    char **words, *word;
+    size_t i, j, *word_size;
+
+    if (!token || !token->words || !token->word_size)
+        _perror("Error: token is empty");
+
+
+    for (i = 0; i < token->elements; i++)
+    {
+        word = realloc(token->words[i], token->word_size[i]);
+        if (!word)
+        {
+            for (j = 0; j < i; j++)
+                free(token->words[j]);
+            _perror("Error: failed to realloc token word");
+        }
+        token->words[i] = word;
+    }
+
+    word_size = realloc(token->word_size, token->elements);
+    if (!word_size)
+        _perror("Error: failed to realloc token word size");
+    token->word_size = word_size;
+
+    words = realloc(token->words, token->elements);
+    if (!words)
+        _perror("Error: failed to realloc token words");
+    token->words = words;
+
+    free(word);
+    free(words);
+    free(word_size);
+}

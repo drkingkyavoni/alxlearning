@@ -1,0 +1,64 @@
+#include "main.h"
+
+/**
+ * _execute_command - execute command string
+ * @token - struct token_t
+ * Return: int
+ */
+int _execute_command(token_t *token, char **env)
+{
+	pid_t child_proc_id;
+	int wait_status;
+	size_t i;
+
+	if ((child_proc_id = fork()) == -1)
+		_perror("Error (fork)");
+
+	if (child_proc_id == 0)
+	{
+		for (i = 0; i < token->elements; i++)
+			;
+		dprintf(STDOUT_FILENO, "Elem= %ld (%ld)\n", token->elements, i);
+		execve(token->words[0], token->words, env);
+		perror("Error (child)");
+	}
+	else
+	{
+		waitpid(-1, &wait_status, 0);
+	}
+	return (0);
+}
+
+/**
+ * _realloc - function to realloc token pointer
+ *
+ * @token: struct token_t
+ * Return: void
+ */
+void _realloc(token_t *token)
+{
+	char **words = NULL;
+	size_t i, j;
+
+	words = (char **)malloc(sizeof(char *) * token->elements);
+	if (!words)
+	{
+		perror("Error (empty words)");
+		exit(EXIT_FAILURE);
+	};
+
+	for (i = 0; i < token->elements; i++)
+	{
+		if (!(token->words[i]))
+		{
+			perror("Error (word)");
+			for (j = 0; j < i; j++)
+				free(words[j]);
+			free(words);
+			exit(EXIT_FAILURE);
+		}
+		words[i] = _strndup(token->words[i], get_ssize(token->words[i]));
+	}
+	free(token->words);
+	token->words = words;
+}

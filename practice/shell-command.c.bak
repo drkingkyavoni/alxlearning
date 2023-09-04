@@ -1,0 +1,41 @@
+#include "main.h"
+
+/**
+ * _execute_command - execute command string
+ * @token - struct token_t
+ * Return: int
+ */
+int _execute_command(token_t *token, char **env)
+{
+	pid_t child_proc_id;
+	int wait_status;
+
+	/* check if file */
+	DIR *dir = opendir(token->words[0]);
+
+	if (dir)
+	{
+		closedir(dir);
+		return (-1);
+	}
+
+	if (errno != ENOTDIR)
+		return (-1);
+
+	if ((child_proc_id = fork()) == -1)
+		_perror("Error: failed to create child process");
+
+	if (child_proc_id == 0)
+	{
+		execve(token->words[0], token->words, env);
+		perror("Error: failed to run");
+	}
+	else
+	{
+		waitpid(child_proc_id, &wait_status, 0);
+		if (WIFEXITED(wait_status))
+			return WEXITSTATUS(wait_status);
+		return (-1);
+	}
+	return (0);
+}
